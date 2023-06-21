@@ -30,5 +30,16 @@ export const getSilgum = async () => {
     silgums.push(temp);
   }
 
+  // 실시간검색어에서 가져온 URL을 통해 뉴스 크롤링
+  for (let i = 0; i < silgums.length; i++) {
+    await page.goto(silgums[i].url);
+    const newsURL = await page.$eval("#sp_nws1 > div > a", (data) => data.href);
+
+    // 뉴스 링크로 이동
+    await page.goto(newsURL);
+    // 타임아웃 30초 이슈 해결해야함
+    // 아싸리 컴터가 버티면 한번에 10개 페이지 다 띄우는것도 나쁘진 않을듯
+  }
+
   await browser.close();
 };
