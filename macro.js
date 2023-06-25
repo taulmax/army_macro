@@ -26,20 +26,64 @@ export const getSilgum = async () => {
       "span.rank-text",
       (data) => data.textContent
     );
-    temp.url = await silgumAnchors[i].evaluate((data) => data.href);
+    // temp.url = await silgumAnchors[i].evaluate((data) => data.href);
     silgums.push(temp);
   }
 
-  // 실시간검색어에서 가져온 URL을 통해 뉴스 크롤링
+  // 실시간검색어에서 정보를 통해 뉴스 크롤링
   for (let i = 0; i < silgums.length; i++) {
-    await page.goto(silgums[i].url);
-    const newsURL = await page.$eval("#sp_nws1 > div > a", (data) => data.href);
+    await page.goto("https://www.bigkinds.or.kr/v2/news/search.do");
+    await page.click("#collapse-step-1");
+    await sleep(1000);
 
-    // 뉴스 링크로 이동
-    await page.goto(newsURL);
-    // 타임아웃 30초 이슈 해결해야함
-    // 아싸리 컴터가 버티면 한번에 10개 페이지 다 띄우는것도 나쁘진 않을듯
+    await page.waitForSelector("#total-search-key");
+    await page.type("#total-search-key", silgums[i].silgum);
+    await page.keyboard.press("Enter");
+    await sleep(3000);
+
+    // 검색 결과가 0이면 패스
+    await page.waitForSelector(
+      "#news-results-tab > div.data-result-hd.pc-only.paging-v2-wrp > h3 > span.total-news-cnt"
+    );
+    const newsCount = await page.$eval(
+      "#news-results-tab > div.data-result-hd.pc-only.paging-v2-wrp > h3 > span.total-news-cnt",
+      (data) => data.textContent
+    );
+    if (parseInt(newsCount) == 0) {
+      continue;
+    }
+
+    await page.waitForSelector(
+      "#news-results > div:nth-child(1) > div > div.cont > a > div > strong > span"
+    );
+    await page.click(
+      "#news-results > div:nth-child(1) > div > div.cont > a > div > strong > span"
+    );
+
+    await sleep(3000);
+
+    await page.waitForSelector(
+      "#news-detail-modal > div > div > div.modal-body > div > div.news-view-head > h1"
+    );
+    silgums[i].title = await page.$eval(
+      "#news-detail-modal > div > div > div.modal-body > div > div.news-view-head > h1",
+      (data) => data.textContent
+    );
+
+    await page.waitForSelector(
+      "#news-detail-modal > div > div > div.modal-body > div > div.news-view-body"
+    );
+    silgums[i].contents = await page.$eval(
+      "#news-detail-modal > div > div > div.modal-body > div > div.news-view-body",
+      (data) =>
+        data.textContent
+          .replaceAll("\n", "")
+          .replaceAll("\t", "")
+          .replaceAll("  ", "")
+    );
   }
+
+  console.log(silgums);
 
   await browser.close();
 };
