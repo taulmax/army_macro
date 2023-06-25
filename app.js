@@ -1,6 +1,10 @@
 import express from "express";
 import path from "path";
+import dotenv from "dotenv";
 import { getSilgum } from "./macro.js";
+
+dotenv.config();
+
 const __dirname = path.resolve();
 
 const app = express();

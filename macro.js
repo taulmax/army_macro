@@ -53,6 +53,7 @@ export const getSilgum = async () => {
       continue;
     }
 
+    // 뉴스 정보 크롤링
     await page.waitForSelector(
       "#news-results > div:nth-child(1) > div > div.cont > a > div > strong > span"
     );
@@ -84,6 +85,9 @@ export const getSilgum = async () => {
   }
 
   console.log(silgums);
+
+  // 더캠프 로그인
+  await page.goto("https://www.thecamp.or.kr/login/viewLogin.do");
 
   await browser.close();
 };
