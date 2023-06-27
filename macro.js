@@ -5,11 +5,11 @@ export const getSilgum = async () => {
   const browser = await puppeteer.launch({ headless: false });
   const page = await browser.newPage();
 
-  // 실시간 검색어 홈페이지
-  await page.goto("https://www.signal.bz/");
-
   // Set screen size
   await page.setViewport({ width: 1080, height: 1024 });
+
+  // 실시간 검색어 홈페이지
+  await page.goto("https://www.signal.bz/");
 
   // 실시간 검색어 정보 가져오기
   let silgums = [];
@@ -26,7 +26,6 @@ export const getSilgum = async () => {
       "span.rank-text",
       (data) => data.textContent
     );
-    // temp.url = await silgumAnchors[i].evaluate((data) => data.href);
     silgums.push(temp);
   }
 
@@ -76,11 +75,18 @@ export const getSilgum = async () => {
     );
     silgums[i].contents = await page.$eval(
       "#news-detail-modal > div > div > div.modal-body > div > div.news-view-body",
-      (data) =>
-        data.textContent
+      (data) => {
+        const replacedContent = data.textContent
           .replaceAll("\n", "")
           .replaceAll("\t", "")
-          .replaceAll("  ", "")
+          .replaceAll("  ", "");
+
+        if (replacedContent.length > 1499) {
+          return replacedContent.substr(0, 1499);
+        } else {
+          return replacedContent;
+        }
+      }
     );
   }
 
@@ -89,5 +95,43 @@ export const getSilgum = async () => {
   // 더캠프 로그인
   await page.goto("https://www.thecamp.or.kr/login/viewLogin.do");
 
+  await page.waitForSelector("#userId");
+  await page.type("#userId", process.env.ID);
+  await page.waitForSelector("#userPwd");
+  await page.type("#userPwd", process.env.PW);
+  await page.click("#emailLoginBtn");
+  await sleep(3000);
+
+  // 위문편지 작성하러 가기
+  for (let i = 0; i < silgums.length; i++) {
+    if (!silgums[i].title) {
+      continue;
+    }
+
+    await page.goto(
+      "https://www.thecamp.or.kr/eduUnitCafe/viewEduUnitCafeMain.do"
+    );
+    await sleep(1000);
+    await page.click(
+      "#divSlide1 > div.swiper-wrapper > div.swiper-slide.swiper-slide-active.swiper-slide-duplicate-next.swiper-slide-duplicate-prev > div > div.btn-wrap > a.btn-green"
+    );
+    await sleep(1000);
+    await page.click(
+      "body > div.container > div.container-wrap > div:nth-child(2) > div.btn-a-wrap.text-center.mt50 > button"
+    );
+    await sleep(1000);
+
+    // 위문편지 작성
+    await page.type("#sympathyLetterSubject", silgums[i].title);
+    await page.keyboard.press("Tab");
+    await page.keyboard.type(silgums[i].contents);
+    await sleep(1000);
+    await page.click(
+      "body > div.container > div.container-wrap > section > div.btn-b-area > a:nth-child(3)"
+    );
+    await sleep(3000);
+  }
+
+  console.log("전송 완료!");
   await browser.close();
 };
